@@ -1,0 +1,37 @@
+compile kernel:
+
+1. First, fetch a copy of the goldfish kernel source
+	$ cd $ANDROID_HOME
+    $ git clone https://android.googlesource.com/kernel/goldfish.git
+
+2. get the version 3.4 of kernel
+    $ cd ${ANDROID_HOME}/goldfish
+    $ git checkout -t origin/android-goldfish-3.4 -b goldfish 3.4
+
+3. We are now ready to start compiling the kernel. First we need to generate the build configuration:
+	$ cd ${ANDROID_HOME}/goldfish
+	$ make ARCH=arm SUBARCH=arm goldfish_armv7_defconfig
+
+4. Before we continue, we want to enable debug symbols. In ${ANDROID_HOME}/goldfish/.config, set CONFIG_DEBUG_INFO parameter to y.
+   CONFIG_DEBUG_INFO=y
+
+5. ready to make
+	$ make ARCH=arm SUBARCH=arm CROSS_COMPILE=${ANDROID_HOME}/prebuilt/linux-x86/toolchain/arm-eabi-4.9/bin/arm-linux-androideabi-
+
+run the emulator:
+
+1. First we need to set up a machine:
+	$ android create avd --name debug --target android-19 --abi armeabi-v7a
+
+2. ready to run emulator:
+	$ emulator-arm -verbose -debug init -show-kernel -kernel arch/arm/boot/zImage -avd debug -no-boot-anim -no-skin -no-audio -no-window -qemu -gdb tcp::1234
+
+3. We can now fire up gdb from another terminal, and attach to the gdbserver:
+	$ arm-linux-androideabi-gdb vmlinux
+	...
+	Reading symbols from vmlinux...done.
+	(gdb) target remote :1234
+	Remote debugging using :1234
+	warning: Architecture rejected target-supplied description
+	0xc000dcc4 in sys_call_table () at arch/arm/kernel/entry-common.S:494
+	494             b       ret_slow_syscall
