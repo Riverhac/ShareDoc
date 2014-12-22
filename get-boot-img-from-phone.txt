@@ -1,0 +1,41 @@
+1. 真机提取boot.img
+
+	ubuntu$ adb shell
+	shell@android:/ $ su
+	shell@android:/ $ ls -l /dev/block/platform/msm_sdcc.1/by-name
+	lrwxrwxrwx root     root              1970-01-09 01:33 aboot -> /dev/block/mmcblk0p7
+	lrwxrwxrwx root     root              1970-01-09 01:33 boot -> /dev/block/mmcblk0p8    ##this is what I need
+	lrwxrwxrwx root     root              1970-01-09 01:33 boot1 -> /dev/block/mmcblk0p9
+	lrwxrwxrwx root     root              1970-01-09 01:33 cache -> /dev/block/mmcblk0p19
+	lrwxrwxrwx root     root              1970-01-09 01:33 misc -> /dev/block/mmcblk0p11
+	lrwxrwxrwx root     root              1970-01-09 01:33 modem -> /dev/block/mmcblk0p1
+	lrwxrwxrwx root     root              1970-01-09 01:33 persist -> /dev/block/mmcblk0p18
+	lrwxrwxrwx root     root              1970-01-09 01:33 recovery -> /dev/block/mmcblk0p17
+	lrwxrwxrwx root     root              1970-01-09 01:33 rpm -> /dev/block/mmcblk0p5
+	lrwxrwxrwx root     root              1970-01-09 01:33 sbl1 -> /dev/block/mmcblk0p2
+	lrwxrwxrwx root     root              1970-01-09 01:33 sbl2 -> /dev/block/mmcblk0p3
+	lrwxrwxrwx root     root              1970-01-09 01:33 sbl3 -> /dev/block/mmcblk0p6
+	lrwxrwxrwx root     root              1970-01-09 01:33 system -> /dev/block/mmcblk0p15
+	lrwxrwxrwx root     root              1970-01-09 01:33 system1 -> /dev/block/mmcblk0p16
+	lrwxrwxrwx root     root              1970-01-09 01:33 tz -> /dev/block/mmcblk0p10
+	lrwxrwxrwx root     root              1970-01-09 01:33 userdata -> /dev/block/mmcblk0p20
+	
+	shell@android:/ $ dd if=/dev/block/mmcblk0p8 of=/sdcard/boot.img
+	
+	ubuntu$ adb pull /sdcard/boot.img ./boot.img # 取出 boot.img
+	
+2. 分解 boot.img，得到kernel 文件
+	ubuntu$ abootimg -x boot.img
+	writing boot image config in bootimg.cfg 
+	extracting kernel in zImage   ##### zImage 就是内核
+	extracting ramdisk in initrd.img
+	
+	查看内核文件的压缩方式
+	ubuntu$ binwalk zImage | head
+	DECIMAL       HEXADECIMAL     DESCRIPTION
+	--------------------------------------------------------------------------------
+	16319         0x3FBF          gzip compressed data, maximum compression, from Unix, NULL date:
+	1280167       0x1388A7        MySQL ISAM compressed data file Version 3
+
+	Kernel被载入内存后是以压缩的状态存放在磁盘之上的,他头部的一段代码就是为了初始化并且解压缩的一段代码.
+	这段代码把自身压缩的一部分代码解压出来.放到真正内核所在的位置上.所以他所用的压缩算法要从他头部那段来指定的
